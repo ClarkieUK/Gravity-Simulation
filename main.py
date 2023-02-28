@@ -30,13 +30,13 @@ WIDTH = 1080
 HEIGHT = 1080
 PADDING = 10
 FPS = 60
-TIMESKIP = (3.154e+7) * 1/(4*FPS)
+TIMESKIP = (3.154e+7) * 1/(16*FPS)
 
 G = 6.67430e-11
 AU = 1.496e11
 
 global SCALE
-SCALE = 1/AU
+SCALE = 200/AU
 
 particles = []
 
@@ -101,17 +101,45 @@ def draw_arrow(surface, colour, start, end,r,angle):
 def updateBodies(bodies):
 
     for body1 in bodies : 
-
+                                                                                                            
         body1.reset_force()
 
         for body2 in bodies :
+            #if body1.name in body2.parents or body1.name in body2.sons : # PARENT MEETS SON : if parent.name in son.parents :compute <-> SON MEETS PARENT : if son.name in parent.sons :compute 
+            if _magnitude(_positionvector(body1.position,body2.position)) != 0 :
 
+                body1.add_force(_force(body1.position,body2.position,body1.mass,body2.mass))
+            
+        body1.move()
+
+def updateBodiesLeapfrog(bodies):
+
+    for body1 in bodies : 
+                                                                                                            
+        body1.reset_force()
+
+        for body2 in bodies :
+            #if body1.name in body2.parents or body1.name in body2.sons :
             if _magnitude(_positionvector(body1.position,body2.position)) != 0 :
 
                 body1.add_force(_force(body1.position,body2.position,body1.mass,body2.mass))
 
-        body1.move()
-    
+        body1.halfvelocity = body1.velocity + body1.force/body1.mass * TIMESKIP * 0.5 
+
+        body1.position = body1.position + body1.halfvelocity * TIMESKIP
+
+        body1.reset_force()
+
+        for body2 in bodies :
+            #if body1.name in body2.parents or body1.name in body2.sons :
+            if _magnitude(_positionvector(body1.position,body2.position)) != 0 :
+
+                body1.add_force(_force(body1.position,body2.position,body1.mass,body2.mass))
+
+        body1.velocity = body1.halfvelocity + body1.force/body1.mass * TIMESKIP * 0.5
+
+        body1.orbit_points.append((body1.position[0],body1.position[1]))
+
 def updateColor(color) :
     if color[0] < 0 :
         color[0] = 0
@@ -122,43 +150,51 @@ def updateColor(color) :
 
 def init() :
 
-    sun = Body(YELLOW,2,(np.array([0,0,0])*AU),np.array([0,0,0]),1.98892e30)
-    mercury = Body(GRAY,1,(np.array([0.387,0,0])*AU),np.array([0,-47.3e3,0]),3.3e23)
-    venus = Body(ORANGE,1,np.array([0.783,0,0])*AU,np.array([0,-35.02e3,0]),4.8685e24)
-    earth = Body(LIGHT_BLUE,1,(np.array([-1,0,0])*AU),np.array([0,29.783e3,0]),5.9742e24)
-    mars = Body(RED,1,(np.array([-1.524,0,0])*AU),np.array([0,24.077e3,0]),6.39e23)
-    jupiter = Body(BROWN,1,(np.array([5.2,0,0])*AU),np.array([0,-13.06e3,0]),1.898e27)
-    saturn = Body(BROWN,1,(np.array([-9.5,0,0])*AU),np.array([0,9.68e3,0]),5.683e26)
-    uranus = Body(BLUE,1,(np.array([-19.8,0,0])*AU),np.array([0,6.8e3,0]),8.6811e24)
-    neptune = Body(BLUE,1,(np.array([-30,0,0])*AU),np.array([0,5.43e3,0]),1.02409e26)
+    sun = Body(YELLOW,2,np.array([0,0,0])*AU,np.array([0,0,0]),1.98892e30, 'sun', [''], ['mercury','venus','earth','mars','jupiter','saturn','uranus','neptune'])
+    mercury = Body(GRAY,1,np.array([0.387,0,0])*AU,np.array([0,-47.3e3,0]),3.3e23, 'mercury', ['sun'] , [''])
+    venus = Body(ORANGE,1,np.array([0.783,0,0])*AU,np.array([0,-35.02e3,0]),4.8685e24, 'venus', ['sun'],[''])
+    earth = Body(LIGHT_BLUE,1,np.array([-1,0,0])*AU,np.array([0,29.783e3,0]),5.9742e24, 'earth', ['sun'] , ['moon'])
+    moon = Body(GRAY,1,np.array([-1.0025695552898,0,0])*AU,np.array([0,(29.783e3-1.022e3),0]),7.346e22, 'moon', ['earth'], [''])
+    mars = Body(RED,1,np.array([-1.524,0,0])*AU,np.array([0,24.077e3,0]),6.39e23, 'mars', ['sun'] , [''])
+    jupiter = Body(BROWN,1,np.array([5.2,0,0])*AU,np.array([0,-13.06e3,0]),1.898e27, 'jupiter', ['sun'] , [''])
+    saturn = Body(BROWN,1,np.array([-9.5,0,0])*AU,np.array([0,9.68e3,0]),5.683e26, 'saturn', ['sun'] , [''])
+    uranus = Body(BLUE,1,np.array([-19.8,0,0])*AU,np.array([0,6.8e3,0]),8.6811e24, 'uranus', ['sun'] , [''])
+    neptune = Body(BLUE,1,np.array([-30,0,0])*AU,np.array([0,5.43e3,0]),1.02409e26, 'neptune', ['sun'] , [''])
 
-
-    return [sun,mercury,venus,earth,mars,jupiter,saturn,uranus,neptune] 
-    
+    return [sun,mercury,venus,moon,earth,mars,jupiter,saturn,uranus,neptune] 
 
 # Setup Classes -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 class Body : 
 
-    def __init__(self,color,radius,position,velocity, mass, ) :
-        self.color = color
+    def __init__(self,color,radius,position,velocity, mass, name, parents, sons) :
 
+        # colors and shape
+        self.radius = radius
+        self.color = color
         self.orbit_color = np.array([
             self.color[0]-75,
             self.color[1]-75,
             self.color[2]-75
         ])
-
         updateColor(self.orbit_color)
 
-        self.radius = radius
+        # physical properties
         self.position = position
+        self.nextposition = int
         self.velocity = velocity
+        self.halfvelocity = int
         self.force = np.array([0, 0, 0])
         self.mass = mass
-        self.thickness = 0
+
+        # orbits
         self.orbit_points = []
 
-    def draw(self, surface, offset, SCALER) :
+        # family
+        self.name = name
+        self.parents = parents
+        self.sons = sons
+
+    def draw(self, surface, offset) :
 
         if self.velocity[0] < 0 :
             angle = (np.arctan(self.velocity[1]/self.velocity[0])+np.pi)
@@ -168,22 +204,24 @@ class Body :
         L=30
 
         # draw_arrow(WINDOW, WHITE, (self.position[0]*SCALE+WIDTH/2+offset[0],self.position[1]*SCALE+HEIGHT/2+offset[1]), (L*np.cos(angle)+self.position[0]*SCALE+WIDTH/2+offset[0],
-        #           L*np.sin(angle)+self.posit ion[1]*SCALE+HEIGHT/2+offset[1]),5,140)
+        #           L*np.sin(angle)+self.position[1]*SCALE+HEIGHT/2+offset[1]),5,140)
 
         if len(self.orbit_points) > 2 :
             updated_points = []
             for point in self.orbit_points :
                 if (len(updated_points)) > 500 :
                     updated_points.pop(0)
+
                 x,y = point
                 x = x * SCALE + WIDTH/2 + offset[0]
                 y = y * SCALE + HEIGHT/2 + offset[1]
+
                 updated_points.append((x,y))
+
             py.draw.aalines(WINDOW,self.orbit_color,False,updated_points,2)
 
         gfx.aacircle(surface, int(self.position[0]*SCALE+WIDTH/2+offset[0]), int(self.position[1]*SCALE+HEIGHT/2+offset[1]), int(self.radius), self.color)
         gfx.filled_circle(surface, int(self.position[0]*SCALE+WIDTH/2+offset[0]), int(self.position[1]*SCALE+HEIGHT/2+offset[1]), int(self.radius), self.color)
-
 
     def draw_particles(self, surface, offset) :
 
@@ -199,7 +237,6 @@ class Body :
                 particle.move()
                 particle.update(particles)
 
-
     def add_force(self, force_array) :
         self.force = self.force + force_array
 
@@ -207,8 +244,8 @@ class Body :
         self.force = np.array([0,0,0])
 
     def move(self) :
-        self.velocity = self.velocity + (self.force / self.mass) *  TIMESKIP # a=F/m
-        self.position = self.position + (self.velocity) * TIMESKIP #d = d_0 + v/t
+        self.velocity = self.velocity + (self.force / self.mass) *  TIMESKIP # a=F/m ms-1 = ms-1 + s(ms^-2) or 
+        self.position = self.position + (self.velocity) * TIMESKIP #d = d_0 + d/t * t
 
         self.orbit_points.append((self.position[0],self.position[1]))
 
@@ -239,13 +276,14 @@ class Particle() :
         self.position[0] += random.randint(-10,10)/25
         self.position[1] += random.randint(-10,10)/25 
 
+
 # Main --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 def main() :
 
     global SCALE
     global radius_SCALE
     global orbits
-    SCALER = 1
+    SCALER = 200
 
     bodies  = init()
 
@@ -317,9 +355,8 @@ def main() :
         oldmousey = mousey
 
         # Update 
-        KEYS_PRESSED = py.key.get_pressed()
-
-        updateBodies(bodies)                         
+        updateBodies(bodies)     
+        #updateBodiesLeapfrog(bodies)                    
 
         py.display.update()
 
@@ -329,7 +366,7 @@ def main() :
         for body in bodies :
 
             body.draw_particles(WINDOW,offset)
-            body.draw(WINDOW,offset,SCALER)  
+            body.draw(WINDOW,offset)  
     
     return 0
 
