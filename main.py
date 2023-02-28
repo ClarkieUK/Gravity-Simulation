@@ -30,7 +30,7 @@ WIDTH = 1080
 HEIGHT = 1080
 PADDING = 10
 FPS = 60
-TIMESKIP = (3.154e+7) * 1/(16*FPS)
+TIMESKIP = (3.154e+7) * 1/(8*FPS)
 
 G = 6.67430e-11
 AU = 1.496e11
@@ -112,14 +112,13 @@ def updateBodies(bodies):
             
         body1.move()
 
-def updateBodiesLeapfrog(bodies):
+def updateBodiesLeapfrog(bodies): # ? Verlet integration - leapfrog integration causing problems
 
     for body1 in bodies : 
                                                                                                             
         body1.reset_force()
 
         for body2 in bodies :
-            #if body1.name in body2.parents or body1.name in body2.sons :
             if _magnitude(_positionvector(body1.position,body2.position)) != 0 :
 
                 body1.add_force(_force(body1.position,body2.position,body1.mass,body2.mass))
@@ -131,7 +130,6 @@ def updateBodiesLeapfrog(bodies):
         body1.reset_force()
 
         for body2 in bodies :
-            #if body1.name in body2.parents or body1.name in body2.sons :
             if _magnitude(_positionvector(body1.position,body2.position)) != 0 :
 
                 body1.add_force(_force(body1.position,body2.position,body1.mass,body2.mass))
