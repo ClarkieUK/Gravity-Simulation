@@ -11,18 +11,18 @@ py.init()
 py.font.init()
 
 # Setup Constants ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
+WHITE = np.array([255, 255, 255])
+BLACK = np.array([0, 0, 0])
+RED = np.array([255, 0, 0])
+GREEN = np.array([0, 255, 0])
+BLUE = np.array([0, 0, 255])
 LIGHT_BLUE = np.array([173,216,230])
-YELLOW = (255,255,0)
-PURPLE = (203, 195, 227)
-GRAY = (169,169,169)
-DIM_GRAY = (16,16,16)
-ORANGE = (255,165,0)
-BROWN = (222,184,135)
+YELLOW = np.array([255,255,0])
+PURPLE = np.array([203, 195, 227])
+GRAY = np.array([169,169,169])
+DIM_GRAY = np.array([16,16,16])
+ORANGE = np.array([255,165,0])
+BROWN = np.array([222,184,135])
 
 # Facts https://nssdc.gsfc.nasa.gov/planetary/planetfact.html , https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/
 
@@ -167,6 +167,9 @@ class Body :
 
         L=30
 
+        # draw_arrow(WINDOW, WHITE, (self.position[0]*SCALE+WIDTH/2+offset[0],self.position[1]*SCALE+HEIGHT/2+offset[1]), (L*np.cos(angle)+self.position[0]*SCALE+WIDTH/2+offset[0],
+        #           L*np.sin(angle)+self.posit ion[1]*SCALE+HEIGHT/2+offset[1]),5,140)
+
         if len(self.orbit_points) > 2 :
             updated_points = []
             for point in self.orbit_points :
@@ -176,15 +179,7 @@ class Body :
                 x = x * SCALE + WIDTH/2 + offset[0]
                 y = y * SCALE + HEIGHT/2 + offset[1]
                 updated_points.append((x,y))
-            #py.draw.lines(WINDOW, self.color, False, updated_points, 2)
             py.draw.aalines(WINDOW,self.orbit_color,False,updated_points,2)
-
-        
-        # draw_arrow(WINDOW, WHITE, (self.position[0]*SCALE+WIDTH/2+offset[0],self.position[1]*SCALE+HEIGHT/2+offset[1]), (L*np.cos(angle)+self.position[0]*SCALE+WIDTH/2+offset[0],
-        #           L*np.sin(angle)+self.posit ion[1]*SCALE+HEIGHT/2+offset[1]),5,140)
-
-        if self.radius < 1 :
-            self.radius == 1
 
         gfx.aacircle(surface, int(self.position[0]*SCALE+WIDTH/2+offset[0]), int(self.position[1]*SCALE+HEIGHT/2+offset[1]), int(self.radius), self.color)
         gfx.filled_circle(surface, int(self.position[0]*SCALE+WIDTH/2+offset[0]), int(self.position[1]*SCALE+HEIGHT/2+offset[1]), int(self.radius), self.color)
@@ -229,20 +224,12 @@ class Particle() :
 
         self.size = self.size - self.shrinkrate
 
-        colors = list(self.color)
-        colors = [colors[0]-1.5,colors[1]-1.5,colors[2]-1.5]
+        self.color = [self.color[0]-1.5,self.color[1]-1.5,self.color[2]-1.5]
 
-        if colors[0] < 0 :
-            colors [0] = 0
-        if colors[1] < 0 :
-            colors [1] = 0
-        if colors[2] < 0 :
-            colors [2] = 0
+        updateColor(self.color)
 
-        self.color = tuple(colors)
-
-        if self.size <= 0 or _magnitude(list(self.color)) == 0:
-            particles.remove(self)
+        if self.size <= 0 or _magnitude(self.color) == 0:
+            particles.remove(self)   
         
     def draw(self,surface,offset) :
         py.draw.circle(surface,self.color,(self.position[0]+offset[0],self.position[1]+offset[1]),self.size)
@@ -251,9 +238,6 @@ class Particle() :
 
         self.position[0] += random.randint(-10,10)/25
         self.position[1] += random.randint(-10,10)/25 
-
-        
-
 
 # Main --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 def main() :
