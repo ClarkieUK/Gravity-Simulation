@@ -16,29 +16,33 @@ BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
-LIGHT_BLUE = (173,216,230)
+LIGHT_BLUE = np.array([173,216,230])
 YELLOW = (255,255,0)
 PURPLE = (203, 195, 227)
 GRAY = (169,169,169)
 DIM_GRAY = (16,16,16)
 ORANGE = (255,165,0)
+BROWN = (222,184,135)
+
+# Facts https://nssdc.gsfc.nasa.gov/planetary/planetfact.html , https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html#/
 
 WIDTH = 1080
 HEIGHT = 1080
 PADDING = 10
 FPS = 60
-TIMESKIP = (3.154e+7) * 1/(8*FPS)
+TIMESKIP = (3.154e+7) * 1/(4*FPS)
 
 G = 6.67430e-11
 AU = 1.496e11
 
 global SCALE
-SCALE = 200/AU
+SCALE = 1/AU
 
 particles = []
 
 X_AXIS = np.array([1,0,0])
 Y_AXIS = np.array([0,1,0])
+Z_AXIS = np.array([0,0,1])
 
 WINDOW = py.display.set_mode((WIDTH, HEIGHT))
 py.display.set_caption('Newtonian Simulator')
@@ -107,31 +111,54 @@ def updateBodies(bodies):
                 body1.add_force(_force(body1.position,body2.position,body1.mass,body2.mass))
 
         body1.move()
+    
+def updateColor(color) :
+    if color[0] < 0 :
+        color[0] = 0
+    if color[1] < 0 :
+        color[1] = 0
+    if color[2] < 0 :
+        color[2] = 0
 
 def init() :
 
-    sun = Body(YELLOW,20,(np.array([0,0,0])*AU),np.array([0,0,0]),1.98892e30)
-    mercury = Body(GRAY,6,(np.array([0.387,0,0])*AU),np.array([0,-47.3e3,0]),3.3e23)
-    venus = Body(ORANGE,8,np.array([0.783,0,0])*AU,np.array([0,-35.02e3,0]),4.8685e24)
-    earth = Body(LIGHT_BLUE,8,(np.array([-1,0,0])*AU),np.array([0,29.783e3,0]),5.9742e24)
-    mars = Body(RED,7,(np.array([-1.524,0,0])*AU),np.array([0,24.077e3,0]),6.39e23)
+    sun = Body(YELLOW,2,(np.array([0,0,0])*AU),np.array([0,0,0]),1.98892e30)
+    mercury = Body(GRAY,1,(np.array([0.387,0,0])*AU),np.array([0,-47.3e3,0]),3.3e23)
+    venus = Body(ORANGE,1,np.array([0.783,0,0])*AU,np.array([0,-35.02e3,0]),4.8685e24)
+    earth = Body(LIGHT_BLUE,1,(np.array([-1,0,0])*AU),np.array([0,29.783e3,0]),5.9742e24)
+    mars = Body(RED,1,(np.array([-1.524,0,0])*AU),np.array([0,24.077e3,0]),6.39e23)
+    jupiter = Body(BROWN,1,(np.array([5.2,0,0])*AU),np.array([0,-13.06e3,0]),1.898e27)
+    saturn = Body(BROWN,1,(np.array([-9.5,0,0])*AU),np.array([0,9.68e3,0]),5.683e26)
+    uranus = Body(BLUE,1,(np.array([-19.8,0,0])*AU),np.array([0,6.8e3,0]),8.6811e24)
+    neptune = Body(BLUE,1,(np.array([-30,0,0])*AU),np.array([0,5.43e3,0]),1.02409e26)
 
 
-    return [sun,mercury,venus,earth,mars]
+    return [sun,mercury,venus,earth,mars,jupiter,saturn,uranus,neptune] 
+    
 
 # Setup Classes -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 class Body : 
 
-    def __init__(self,color,radius,position,velocity, mass) :
+    def __init__(self,color,radius,position,velocity, mass, ) :
         self.color = color
+
+        self.orbit_color = np.array([
+            self.color[0]-75,
+            self.color[1]-75,
+            self.color[2]-75
+        ])
+
+        updateColor(self.orbit_color)
+
         self.radius = radius
         self.position = position
         self.velocity = velocity
         self.force = np.array([0, 0, 0])
         self.mass = mass
         self.thickness = 0
+        self.orbit_points = []
 
-    def draw(self, surface) :
+    def draw(self, surface, offset, SCALER) :
 
         if self.velocity[0] < 0 :
             angle = (np.arctan(self.velocity[1]/self.velocity[0])+np.pi)
@@ -140,13 +167,30 @@ class Body :
 
         L=30
 
-        draw_arrow(WINDOW, WHITE, (self.position[0]*SCALE+WIDTH/2,self.position[1]*SCALE+HEIGHT/2), (L*np.cos(angle)+self.position[0]*SCALE+WIDTH/2,
-                  L*np.sin(angle)+self.position[1]*SCALE+HEIGHT/2),5,140)
+        if len(self.orbit_points) > 2 :
+            updated_points = []
+            for point in self.orbit_points :
+                if (len(updated_points)) > 500 :
+                    updated_points.pop(0)
+                x,y = point
+                x = x * SCALE + WIDTH/2 + offset[0]
+                y = y * SCALE + HEIGHT/2 + offset[1]
+                updated_points.append((x,y))
+            #py.draw.lines(WINDOW, self.color, False, updated_points, 2)
+            py.draw.aalines(WINDOW,self.orbit_color,False,updated_points,2)
 
-        gfx.aacircle(surface, int(self.position[0]*SCALE+WIDTH/2), int(self.position[1]*SCALE+HEIGHT/2), self.radius, self.color)
-        gfx.filled_circle(surface, int(self.position[0]*SCALE+WIDTH/2), int(self.position[1]*SCALE+HEIGHT/2), self.radius, self.color)
+        
+        # draw_arrow(WINDOW, WHITE, (self.position[0]*SCALE+WIDTH/2+offset[0],self.position[1]*SCALE+HEIGHT/2+offset[1]), (L*np.cos(angle)+self.position[0]*SCALE+WIDTH/2+offset[0],
+        #           L*np.sin(angle)+self.posit ion[1]*SCALE+HEIGHT/2+offset[1]),5,140)
 
-    def draw_particles(self, surface) :
+        if self.radius < 1 :
+            self.radius == 1
+
+        gfx.aacircle(surface, int(self.position[0]*SCALE+WIDTH/2+offset[0]), int(self.position[1]*SCALE+HEIGHT/2+offset[1]), int(self.radius), self.color)
+        gfx.filled_circle(surface, int(self.position[0]*SCALE+WIDTH/2+offset[0]), int(self.position[1]*SCALE+HEIGHT/2+offset[1]), int(self.radius), self.color)
+
+
+    def draw_particles(self, surface, offset) :
 
         if _magnitude(self.velocity) > 1000 :
 
@@ -156,7 +200,7 @@ class Body :
             
             for particle in particles :
              
-                particle.draw(surface)
+                particle.draw(surface,offset)
                 particle.move()
                 particle.update(particles)
 
@@ -170,6 +214,8 @@ class Body :
     def move(self) :
         self.velocity = self.velocity + (self.force / self.mass) *  TIMESKIP # a=F/m
         self.position = self.position + (self.velocity) * TIMESKIP #d = d_0 + v/t
+
+        self.orbit_points.append((self.position[0],self.position[1]))
 
 class Particle() :
     def __init__(self,position,velocity,shrinkrate,size,color) :
@@ -198,8 +244,8 @@ class Particle() :
         if self.size <= 0 or _magnitude(list(self.color)) == 0:
             particles.remove(self)
         
-    def draw(self,surface) :
-        py.draw.circle(surface,self.color,(self.position[0],self.position[1]),self.size)
+    def draw(self,surface,offset) :
+        py.draw.circle(surface,self.color,(self.position[0]+offset[0],self.position[1]+offset[1]),self.size)
 
     def move(self) :
 
@@ -213,9 +259,17 @@ class Particle() :
 def main() :
 
     global SCALE
-    SCALER = 200
+    global radius_SCALE
+    global orbits
+    SCALER = 1
 
-    bodies = init()
+    bodies  = init()
+
+    oldmousex = 0
+    oldmousey = 0
+
+    offset = np.array([0,0])
+    offsetting = False
 
     prev_time = time.time()
 
@@ -231,23 +285,57 @@ def main() :
         for event in py.event.get() :
             if event.type == py.QUIT :
                 running = False
+
             if event.type == py.KEYDOWN:
                 if event.key == py.K_ESCAPE:
                     running = False   
+                    
                 if event.key == py.K_UP:
-                    SCALER += 50
+                    SCALER += 25
+                    if SCALER > 1000 :
+                        SCALER = 1000
                     SCALE = SCALER/AU
+                    
                 if event.key == py.K_DOWN:
-                    SCALER -= 50
+                    SCALER -= 25
+                    if SCALER < 1 :
+                        SCALER = 1
                     SCALE = SCALER/AU
+
                 if event.key == py.K_r:
                     running = False
                     main()
 
+            if event.type == py.MOUSEWHEEL :
+                if event.y < 0 :
+                    SCALER -= 1
+                    if SCALER < 1 :
+                        SCALER = 1
+                    SCALE = SCALER / AU
+                    
+                if event.y > 0 :
+                    SCALER += 1
+                    if SCALER > 1000 :
+                        SCALER = 1000
+                    SCALE = SCALER / AU
+
+            if event.type == py.MOUSEBUTTONDOWN :
+                offsetting = True
+
+            if event.type == py.MOUSEBUTTONUP :
+                offsetting = False
+
+        if offsetting == True :
+            offset[0] = offset[0] + (mousex - oldmousex)
+            offset[1] = offset[1] + (mousey - oldmousey)
+
+        oldmousex = mousex
+        oldmousey = mousey
+
         # Update 
         KEYS_PRESSED = py.key.get_pressed()
 
-        updateBodies(bodies)                          
+        updateBodies(bodies)                         
 
         py.display.update()
 
@@ -256,10 +344,8 @@ def main() :
         
         for body in bodies :
 
-            body.draw_particles(WINDOW)
-            body.draw(WINDOW)  
-
-        #py.draw.rect(WINDOW,WHITE, py.Rect(0+PADDING,0+PADDING,WIDTH/2-PADDING,HEIGHT/2-PADDING))
+            body.draw_particles(WINDOW,offset)
+            body.draw(WINDOW,offset,SCALER)  
     
     return 0
 

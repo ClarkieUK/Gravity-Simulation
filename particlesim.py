@@ -1,5 +1,6 @@
 # Setup Modules ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 import pygame as py 
+from pygame import gfxdraw as gfx
 import time 
 import random 
 import numpy as np
@@ -53,6 +54,10 @@ def _force(arr_p,arr_s,mass_p,mass_s) :
          G * mass_p * mass_s / pow(_magnitude(_positionvector(arr_p,arr_s)),2) * _unitvector(_positionvector(arr_p,arr_s)) 
 
     )
+
+def filled_circle(screen, colour, loc, radius):
+	py.gfxdraw.aacircle(screen, int(loc[0]), int(loc[1]), radius, colour)
+	py.gfxdraw.filled_circle(screen, int(loc[0]), int(loc[1]), radius, colour)
 
 # Setup Classes -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 class Body : 
@@ -169,6 +174,8 @@ def main() :
         
         for body in bodies :
             body.draw(WINDOW)
+
+        
     
 
     return 0
