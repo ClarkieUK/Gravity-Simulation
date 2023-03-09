@@ -139,30 +139,91 @@ def updateBodiesLeapfrog(bodies): # Working as intended (?) , terrible at bodies
 
         body1.orbit_points.append((body1.position[0],body1.position[1])) 
 
+# def updateBodiesRungeKutta(bodies) : # Hard to implement
 
-def f(t,x,v) :
-    return v
+#     arr = [0 for i in range(2*len(bodies))] 
 
-def g(t,x,v) :
-    return G*M/pow(_magnitude(_positionvector(p1,p2)),3) * _positionvector(p1,p2)
+#     for i,body in enumerate(bodies) :
+#         length = len(bodies)
+#         arr[i] = body.position
+#         arr[i+length] = body.velocity
 
-def updateBodiesRungeKutta(bodies) : # Hard to implement
+#     arr = np.array(arr).ravel()
 
-    arr = [0 for i in range(2*len(bodies))] 
+#     t = 0
 
-    for i,body in enumerate(bodies) :
-        length = len(bodies)
-        arr[i] = body.position
-        arr[i+length] = body.velocity
+#     for i,body in enumerate(bodies) :
 
-    arr = np.array(arr).ravel()
+#         k1x = f(t,arr[3*i:3*(i+1)],arr[3*i+3*len(bodies):3*(i+1)+3*len(bodies)])
+        
+
+
+# def f(t,Y):
     
+#     Y[1:len(Y):2] = Y[1:len(Y):2]
+
+# k1 = dt * f(t,y)
+# k2 = dt * f(t+dt/2 , y + k1/2)
+# k3 = dt * f(t+dt/2 , y + k2/2)
+# k4 = dt * ft(t+dt , y + k3)
+
+# yout = y + 1/6 * (k1 + 2*k2 + 2*k3 + k4)
+
+def f(t,Y) :
+
+    Yout = []
+    NBodies = int(len(Y)/3)
+    NElements = 3
+
+    for i in range(NBodies) :
+
+        tempv = Y[i * NElements + 1]
+        tempa = 0
+
+        for j in range(NBodies) :
+            if i == j :
+                continue
+            else : 
+                tempa = tempa + (_acceleration(Y[i * NElements + 0],Y[j * NElements + 0],Y[j * NElements + 2]))
+
+        Yout.append(tempv)
+        Yout.append(tempa)
+        Yout.append(0)
+
+    return np.array(Yout)
+
+def updateBodiesRungeKutta(bodies) :
+    
+    Y = []
+
+    dt = TIMESKIP
     t = 0
+    NElements = 3
 
     for i,body in enumerate(bodies) :
 
-        k1x = f(t,arr[3*i:3*(i+1)],arr[3*i+3*len(bodies):3*(i+1)+3*len(bodies)])
-        print(i,body.name)
+        Y.append(body.position)
+        Y.append(body.velocity)
+        Y.append(body.mass)
+
+    Y = np.array(Y)
+
+    f(t,Y)
+
+    k1 = dt * f(t,Y)
+    k2 = dt * f(t+dt/2 , Y + k1/2)
+    k3 = dt * f(t+dt/2 , Y + k2/2)
+    k4 = dt * f(t+dt , Y + k3)
+
+    yout = Y + 1/6 * (k1 + 2*k2 + 2*k3 + k4)
+
+    for i,body in enumerate(bodies) :
+
+        body.position = yout[i*NElements]
+
+        body.orbit_points.append((body.position[0],body.position[1]))
+
+        body.velocity = yout[i*NElements+1]
 
 def updateColor(color) :
     if color[0] < 0 :
@@ -405,11 +466,11 @@ def main() :
         # Update    
         if sim :
 
-            updateBodies(bodies)
+            #updateBodies(bodies)
   
             #updateBodiesLeapfrog(bodies) 
 
-            #updateBodiesRungeKutta(bodies)
+            updateBodiesRungeKutta(bodies)
 
         py.display.update()
 
@@ -418,7 +479,7 @@ def main() :
         
         for body in bodies :
 
-            body.draw_particles(WINDOW,offset)
+            #body.draw_particles(WINDOW,offset)
 
             body.draw(WINDOW,offset)  
 
