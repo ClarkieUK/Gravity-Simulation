@@ -107,6 +107,14 @@ def draw_arrow(surface, colour, start, end,r,angle): # TODO : Make it a clean ar
                                             (end[0]+r*np.sin(np.radians(rotation+angle)), 
                                             end[1]+r*np.cos(np.radians(rotation+angle)))))
 
+def updateColor(color) :
+    if color[0] < 0 :
+        color[0] = 0
+    if color[1] < 0 :
+        color[1] = 0
+    if color[2] < 0 :
+        color[2] = 0
+
 def updateBodies(bodies) : # * Working as intended , loses accuracy over time.
 
     for body1 in bodies :
@@ -201,14 +209,6 @@ def f(t,Y) :
         Yout.append(0)
 
     return np.array(Yout,dtype=object)
-
-def updateColor(color) :
-    if color[0] < 0 :
-        color[0] = 0
-    if color[1] < 0 :
-        color[1] = 0
-    if color[2] < 0 :
-        color[2] = 0
 
 def init() :
 
