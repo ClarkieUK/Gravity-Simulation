@@ -213,6 +213,7 @@ def f(t,Y) :
 def init() :
 
     # Body(WHITE,1,np.array([],dtype=np.float64)*AU,np.array([],dtype=np.float64),9.3835e20, '', [''] , ['']) 
+    temp = []
 
     sun = Body(YELLOW,2,np.array([-8.974133574359094E-03, -4.482427452346882E-04,  2.127030817970091E-04],dtype=np.float64)*AU,np.array([2.943740906566515E-00, -1.522269030106718E+01,  5.405294312927581E-02],dtype=np.float64),1.98892e30, 'sun', [''], ['mercury','venus','earth','mars','jupiter','saturn','uranus','neptune'])
     
@@ -241,7 +242,6 @@ def init() :
     pluto = Body(GRAY,1,np.array([1.634165701841916E+01, -3.059305947768982E+01, -1.453331982012886E+00],dtype=np.float64)*AU,np.array([4.939775926882488E+03,  1.393967470123350E+03, -1.560052632054384E+03],dtype=np.float64),1.309e22, 'pluto', ['sun'] , [''])
 
     ceres1 = Body(WHITE,1,np.array([-2.520166209594838E+00,  1.981777425761302E-01,  4.690652595690624E-01],dtype=np.float64)*AU,np.array([-2.087658705414134E+03, -1.918397099983357E+04, -2.209470431651512E+02],dtype=np.float64),9.3835e20, 'ceres', ['sun'] , ['']) 
-    
 
     b0 = Body(WHITE,1,np.array([0,0,0],dtype=np.float64)*AU,np.array([0,0,0],dtype=np.float64),9.3835e27, '', [''] , ['']) 
     b1 = Body(WHITE,1,np.array([0.364054665,0,0],dtype=np.float64)*AU,np.array([0,0.4662036850e3*7.25,0],dtype=np.float64),9.3835e27, '', [''] , ['']) 
@@ -249,13 +249,69 @@ def init() :
     b3 = Body(WHITE,1,np.array([0,0.364054665,0],dtype=np.float64)*AU,np.array([-0.43236573e3*7.25,0,0],dtype=np.float64),9.3835e27, '', [''] , ['']) 
     b4 = Body(WHITE,1,np.array([0,-0.364054665,0],dtype=np.float64)*AU,np.array([0.43236573e3*7.25,0,0],dtype=np.float64),9.3835e27, '', [''] , ['']) 
 
-    return [sun,mercury,venus,earth,moon,mars,ganymede,jupiter,callisto,saturn,titan,uranus,neptune,pluto,ceres1] 
+    bodies = [sun,mercury,venus,moon,earth,mars,ganymede,callisto,jupiter,titan,saturn,uranus,neptune,pluto,ceres1] 
+    
+    asteroids = []
+    
+    for i in range(250) :
+        
+        x = random.uniform(-1, 1)
+        y = random.uniform(-1, 1)
+        z = 0
+
+        vec = [x, y, z]
+
+        normalized_vec = _unitvector(vec)
+
+        floor = [22,23,24,25]
+        
+        ceiling = [29,30,31,32]
+
+        floor = random.choices(floor, weights=(15,25,25,35))
+        ceiling = random.choices(ceiling, weights=(35,25,25,15))
+
+        # Scale the vector to a specific length
+        desired_length = random.randint(floor[0],ceiling[0]) / 10
+        scaled_vec = [i * desired_length for i in normalized_vec]
+
+        asteroids.append(
+            Body(WHITE,1,np.array([scaled_vec[0],scaled_vec[1],0],dtype=np.float64)*AU,np.array([1,1,1],dtype=np.float64),0, '', [''] , ['']) 
+        )
+        
+    for i in range(2500) :
+        
+        x = random.uniform(-1, 1)
+        y = random.uniform(-1, 1)
+        z = 0
+
+        vec = [x, y, z]
+
+        normalized_vec = _unitvector(vec)
+
+        # Scale the vector to a specific length
+        
+        floor = [300,330,360,390]
+        
+        ceiling = [460,490,520,550]
+
+        floor = random.choices(floor, weights=(15,25,25,35))
+        ceiling = random.choices(ceiling, weights=(35,25,25,15))
+        
+        desired_length = random.randint(floor[0],ceiling[0]) / 10
+        scaled_vec = [i * desired_length for i in normalized_vec]
+
+        asteroids.append(
+            Body(WHITE,1,np.array([scaled_vec[0],scaled_vec[1],0],dtype=np.float64)*AU,np.array([1,1,1],dtype=np.float64),0, '', [''] , ['']) 
+        )
+
 
     #return [b1,b2] 
     #return [b4,b3,b2,b1] 
     #return [sun,venus]
 
-    # TODO : Read these values from a combines csv. 
+    return bodies , asteroids
+
+    # TODO : Read these values from a combined csv. 
 
 # Setup Classes -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 class Body (py.sprite.Group): 
@@ -408,7 +464,7 @@ def main() :
     SCALER = 200
     SCALE = SCALER/AU
 
-    bodies  = init()
+    bodies , asteroids  = init()
 
     oldmousex = 0
     oldmousey = 0
@@ -506,7 +562,7 @@ def main() :
 
         # Update    
         if sim :
-
+            pass
             #updateBodies(bodies)
             
             #updateBodiesLeapfrog(bodies) 
@@ -527,6 +583,9 @@ def main() :
             #body.draw_particles(WINDOW,offset,center_offset)
 
             body.draw(WINDOW,offset,center_offset)  
+            
+        for asteroid in asteroids :
+            asteroid.draw(WINDOW,offset,center_offset)
 
     return 0
 
