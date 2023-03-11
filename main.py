@@ -253,7 +253,7 @@ def init() :
     
     asteroids = []
     
-    for i in range(250) :
+    for i in range(500) :
         
         x = random.uniform(-1, 1)
         y = random.uniform(-1, 1)
@@ -263,15 +263,15 @@ def init() :
 
         normalized_vec = _unitvector(vec)
 
-        floor = [22,23,24,25]
+        floor = [220,230,240,250]
         
-        ceiling = [29,30,31,32]
+        ceiling = [290,300,310,320]
 
         floor = random.choices(floor, weights=(15,25,25,35))
         ceiling = random.choices(ceiling, weights=(35,25,25,15))
 
         # Scale the vector to a specific length
-        desired_length = random.randint(floor[0],ceiling[0]) / 10
+        desired_length = random.randint(floor[0],ceiling[0]) / 100
         scaled_vec = [i * desired_length for i in normalized_vec]
 
         asteroids.append(
@@ -362,7 +362,7 @@ class Body (py.sprite.Group):
         # draw_arrow(WINDOW, WHITE, (self.position[0]*SCALE+WIDTH/2+offset[0],self.position[1]*SCALE+HEIGHT/2+offset[1]), (L*np.cos(angle)+self.position[0]*SCALE+WIDTH/2+offset[0],
         #           L*np.sin(angle)+self.position[1]*SCALE+HEIGHT/2+offset[1]),5,140)
 
-        # TODO : Figure out this scaling shit.
+        # TODO : Figure out this scaling shit.           
 
         if len(self.orbit_points) > 2 :
             updated_points = []
@@ -412,7 +412,7 @@ class Body (py.sprite.Group):
 
     def reset_acceleration(self) :
 
-        self.acceleration = np.array([0,0,0])
+        self.acceleration = np.array([0,0,0]) 
 
     def move(self) :
 
@@ -422,6 +422,18 @@ class Body (py.sprite.Group):
         self.orbit_points.append((self.position[0],self.position[1]))
         
         # TODO : Potentially move this into the integrator ? Redundant. 
+        
+    def move_asteroid(self) :
+        
+        velocity = random.randint(500,20000) 
+        
+        angle = 0
+        angle =  np.arctan2((self.position[1]-HEIGHT/2),(self.position[0]-WIDTH/2)) 
+        
+        self.position[0] = self.position[0] + velocity * TIMESKIP * np.cos(angle+np.pi/2) 
+        self.position[1] = self.position[1] + velocity * TIMESKIP * np.sin(angle+np.pi/2) 
+
+        angle += 1
 
 class Particle() :
     def __init__(self,position,velocity,shrinkrate,size,color) :
@@ -585,7 +597,11 @@ def main() :
             body.draw(WINDOW,offset,center_offset)  
             
         for asteroid in asteroids :
+            
+            asteroid.move_asteroid()
+            
             asteroid.draw(WINDOW,offset,center_offset)
+            
 
     return 0
 
