@@ -94,7 +94,7 @@ def _deltatime(prev_time):
 
     return prev_time,dt
 
-def draw_arrow(surface, colour, start, end,r,angle):
+def draw_arrow(surface, colour, start, end,r,angle): # TODO : Make it a clean arrow head instead of a triangle.
 
     py.draw.line(surface,colour,start,end,2)
 
@@ -107,7 +107,7 @@ def draw_arrow(surface, colour, start, end,r,angle):
                                             (end[0]+r*np.sin(np.radians(rotation+angle)), 
                                             end[1]+r*np.cos(np.radians(rotation+angle)))))
 
-def updateBodies(bodies) : # Working as intended , loses accuracy over time.
+def updateBodies(bodies) : # * Working as intended , loses accuracy over time.
 
     for body1 in bodies :
 
@@ -119,7 +119,7 @@ def updateBodies(bodies) : # Working as intended , loses accuracy over time.
 
         body1.move()
 
-def updateBodiesLeapfrog(bodies): # Working as intended (?) , terrible at bodies close to one another.
+def updateBodiesLeapfrog(bodies): # * Working as intended (?) , terrible at bodies close to one another.
 
     for body1 in bodies : 
                                                                                                             
@@ -145,31 +145,7 @@ def updateBodiesLeapfrog(bodies): # Working as intended (?) , terrible at bodies
 
         body1.orbit_points.append((body1.position[0],body1.position[1])) 
 
-
-def f(t,Y) :
-
-    Yout = []
-    NBodies = int(len(Y)/3)
-    NElements = 3
-
-    for i in range(NBodies) :
-
-        tempv = Y[i * NElements + 1]
-        tempa = 0
-
-        for j in range(NBodies) :
-            if i == j :
-                continue
-            else : 
-                tempa = tempa + (_acceleration(Y[i * NElements + 0],Y[j * NElements + 0],Y[j * NElements + 2]))
-
-        Yout.append(tempv)
-        Yout.append(tempa)
-        Yout.append(0)
-
-    return np.array(Yout,dtype=object)
-
-def updateBodiesRungeKutta(bodies) : # Working as intended , much better accuracy.
+def updateBodiesRungeKutta(bodies) : # * Working as intended , much better accuracy.
     
     Y = []
 
@@ -199,6 +175,29 @@ def updateBodiesRungeKutta(bodies) : # Working as intended , much better accurac
         body.orbit_points.append((body.position[0],body.position[1]))
 
         body.velocity = yout[i*NElements+1]
+
+def f(t,Y) :
+
+    Yout = []
+    NBodies = int(len(Y)/3)
+    NElements = 3
+
+    for i in range(NBodies) :
+
+        tempv = Y[i * NElements + 1]
+        tempa = 0
+
+        for j in range(NBodies) :
+            if i == j :
+                continue
+            else : 
+                tempa = tempa + (_acceleration(Y[i * NElements + 0],Y[j * NElements + 0],Y[j * NElements + 2]))
+
+        Yout.append(tempv)
+        Yout.append(tempa)
+        Yout.append(0)
+
+    return np.array(Yout,dtype=object)
 
 def updateColor(color) :
     if color[0] < 0 :
@@ -247,27 +246,36 @@ def init() :
     b3 = Body(WHITE,1,np.array([0,0.364054665,0],dtype=np.float64)*AU,np.array([-0.43236573e3*7.25,0,0],dtype=np.float64),9.3835e27, '', [''] , ['']) 
     b4 = Body(WHITE,1,np.array([0,-0.364054665,0],dtype=np.float64)*AU,np.array([0.43236573e3*7.25,0,0],dtype=np.float64),9.3835e27, '', [''] , ['']) 
 
-
-    return [sun,mercury,venus,earth,moon,mars,jupiter,ganymede,callisto,saturn,titan,uranus,neptune,pluto,ceres1] 
+    return [sun,mercury,venus,earth,moon,mars,ganymede,jupiter,callisto,saturn,titan,uranus,neptune,pluto,ceres1] 
 
     #return [b1,b2] 
     #return [b4,b3,b2,b1] 
     #return [sun,venus]
 
 # Setup Classes -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
-class Body : 
+class Body (py.sprite.Group): 
 
     def __init__(self,color,radius,position,velocity, mass, name, parents, sons) :
+        super().__init__()
+
+        # family
+        self.name = name
+        self.parents = parents
+        self.sons = sons
 
         # colors and shape
         self.radius = radius
         self.color = color
         self.orbit_color = np.array([
             self.color[0]-75,
-            self.color[1]-75,
+            self.color[1]-75, 
             self.color[2]-75
         ])
         updateColor(self.orbit_color)
+        self.center = False
+        self.center_offset = None
+        if self.name == 'sun' :
+            self.center = True
 
         # physical properties
         self.position = position
@@ -281,12 +289,7 @@ class Body :
         # orbits
         self.orbit_points = []
 
-        # family
-        self.name = name
-        self.parents = parents
-        self.sons = sons
-
-    def draw(self, surface, offset) :
+    def draw(self, surface, offset, center_offset) :
 
         if self.velocity[0] < 0 :
             angle = (np.arctan(self.velocity[1]/self.velocity[0])+np.pi)
@@ -297,7 +300,7 @@ class Body :
 
         # draw_arrow(WINDOW, WHITE, (self.position[0]*SCALE+WIDTH/2+offset[0],self.position[1]*SCALE+HEIGHT/2+offset[1]), (L*np.cos(angle)+self.position[0]*SCALE+WIDTH/2+offset[0],
         #           L*np.sin(angle)+self.position[1]*SCALE+HEIGHT/2+offset[1]),5,140)
- 
+
         if len(self.orbit_points) > 2 :
             updated_points = []
             for point in self.orbit_points :
@@ -305,15 +308,18 @@ class Body :
                     updated_points.pop(0)
 
                 x,y = point
-                x = x * SCALE + WIDTH/2 + offset[0]
-                y = y * SCALE + HEIGHT/2 + offset[1]
+                x = x * SCALE + WIDTH/2 + offset[0] + center_offset[0]
+                y = y * SCALE + HEIGHT/2 + offset[1] + center_offset[1]
 
                 updated_points.append((x,y))
 
-            py.draw.aalines(WINDOW,self.orbit_color,False,updated_points,2)
+            if updated_points[0][0] > -15000 and updated_points[0][0] < (WIDTH+15000) and updated_points[0][1] > -15000 and updated_points[0][1] < (HEIGHT+15000) : 
+                py.draw.aalines(WINDOW,self.orbit_color,False,updated_points,2)
 
-        gfx.aacircle(surface, int(self.position[0]*SCALE+WIDTH/2+offset[0]), int(self.position[1]*SCALE+HEIGHT/2+offset[1]), int(self.radius), self.color)
-        gfx.filled_circle(surface, int(self.position[0]*SCALE+WIDTH/2+offset[0]), int(self.position[1]*SCALE+HEIGHT/2+offset[1]), int(self.radius), self.color)
+        if (self.position[0]*SCALE+WIDTH/2+offset[0] + center_offset[0]) > -1 and self.position[0]*SCALE+WIDTH/2+offset[0] + center_offset[0] < (WIDTH + 1) and self.position[1]*SCALE+HEIGHT/2+offset[1] + center_offset[1] > -1 and self.position[1]*SCALE+HEIGHT/2+offset[1] + center_offset[1] < (HEIGHT + 1) : 
+
+            gfx.aacircle(surface, int(self.position[0]*SCALE+WIDTH/2+offset[0] + center_offset[0]), int(self.position[1]*SCALE+HEIGHT/2+offset[1] + center_offset[1]), int(self.radius), self.color)
+            gfx.filled_circle(surface, int(self.position[0]*SCALE+WIDTH/2+offset[0] + center_offset[0] ), int(self.position[1]*SCALE+HEIGHT/2+offset[1] + center_offset[1]), int(self.radius), self.color)
 
     def draw_particles(self, surface, offset) :
 
@@ -324,7 +330,7 @@ class Body :
             particles.append(particle)
             
             for particle in particles :
-             
+            
                 particle.draw(surface,offset)
                 particle.move()
                 particle.update(particles)
@@ -375,9 +381,9 @@ class Particle() :
         if self.size <= 0 or _magnitude(self.color) == 0:
             particles.remove(self)   
         
-    def draw(self,surface,offset) :
+    def draw(self,surface,offset,center_offset) :
 
-        py.draw.circle(surface,self.color,(self.position[0]+offset[0],self.position[1]+offset[1]),self.size)
+        py.draw.circle(surface,self.color,(self.position[0]+offset[0] + center_offset[0],self.position[1]+offset[1] + + center_offset[1]),self.size)
 
     def move(self) :
 
@@ -391,6 +397,7 @@ def main() :
     global SCALER
     global orbits
     SCALER = 200
+    SCALE = SCALER/AU
 
     bodies  = init()
 
@@ -398,6 +405,7 @@ def main() :
     oldmousey = 0
 
     offset = np.array([0,0])
+    center_offset = (0,0)
     offsetting = False
 
     sim = True
@@ -418,8 +426,8 @@ def main() :
                     
                 if event.key == py.K_UP:
                     SCALER += 25
-                    if SCALER > 1000 :
-                        SCALER = 1000
+                    # if SCALER > 1000 :
+                    #     SCALER = 1000
                     SCALE = SCALER/AU
                     
                 if event.key == py.K_DOWN:
@@ -431,6 +439,26 @@ def main() :
                 if event.key == py.K_r:
                     running = False
                     main()
+
+                if event.key == py.K_t:
+                    offset = np.array([0,0])
+                    center_offset = (0,0)
+
+                if event.key == py.K_p:
+
+                    for body in bodies :
+
+                        body.center = False
+
+                        distx = body.position[0]*SCALE+WIDTH/2+offset[0] + center_offset[0] - mousex
+                        disty = body.position[1]*SCALE+WIDTH/2+offset[1] + center_offset[1] - mousey
+
+                        if np.hypot(distx,disty) < body.radius :
+                            body.center = True
+
+                if event.key == py.K_o:
+                    for body in bodies :
+                        body.center = False
 
                 if event.key == py.K_SPACE:
                     if sim == True :
@@ -452,7 +480,10 @@ def main() :
                     SCALE = SCALER / AU
 
             if event.type == py.MOUSEBUTTONDOWN :
+                for body in bodies :
+                    body.center = False
                 offsetting = True
+
 
             if event.type == py.MOUSEBUTTONUP :
                 offsetting = False
@@ -468,7 +499,7 @@ def main() :
         if sim :
 
             #updateBodies(bodies)
-  
+            
             #updateBodiesLeapfrog(bodies) 
 
             updateBodiesRungeKutta(bodies)
@@ -480,9 +511,13 @@ def main() :
         
         for body in bodies :
 
-            #body.draw_particles(WINDOW,offset)
+            if body.center == True : 
 
-            body.draw(WINDOW,offset)  
+                center_offset = ((WIDTH / 2) - (body.position[0]*SCALE+WIDTH/2+offset[0]) , (HEIGHT / 2)  - (body.position[1]*SCALE+HEIGHT/2+offset[1]))
+
+            #body.draw_particles(WINDOW,offset,center_offset)
+
+            body.draw(WINDOW,offset,center_offset)  
 
     return 0
 
