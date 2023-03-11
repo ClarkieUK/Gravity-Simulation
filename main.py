@@ -144,9 +144,12 @@ def updateBodiesLeapfrog(bodies): # * Working as intended (?) , terrible at bodi
         body1.velocity = body1.halfvelocity + (body1.force/body1.mass) * TIMESKIP / 2   
 
         body1.orbit_points.append((body1.position[0],body1.position[1])) 
+        
+        # ! Possible the entire system needs to be integrated at once.
 
 def updateBodiesRungeKutta(bodies) : # * Working as intended , much better accuracy.
-    
+
+
     Y = []
 
     dt = TIMESKIP
@@ -252,6 +255,8 @@ def init() :
     #return [b4,b3,b2,b1] 
     #return [sun,venus]
 
+    # TODO : Read these values from a combines csv. 
+
 # Setup Classes -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------#
 class Body (py.sprite.Group): 
 
@@ -300,6 +305,8 @@ class Body (py.sprite.Group):
 
         # draw_arrow(WINDOW, WHITE, (self.position[0]*SCALE+WIDTH/2+offset[0],self.position[1]*SCALE+HEIGHT/2+offset[1]), (L*np.cos(angle)+self.position[0]*SCALE+WIDTH/2+offset[0],
         #           L*np.sin(angle)+self.position[1]*SCALE+HEIGHT/2+offset[1]),5,140)
+
+        # TODO : Figure out this scaling shit.
 
         if len(self.orbit_points) > 2 :
             updated_points = []
@@ -357,6 +364,8 @@ class Body (py.sprite.Group):
         self.position = self.position + (self.velocity) * TIMESKIP #d = d + d/t * t
 
         self.orbit_points.append((self.position[0],self.position[1]))
+        
+        # TODO : Potentially move this into the integrator ? Redundant. 
 
 class Particle() :
     def __init__(self,position,velocity,shrinkrate,size,color) :
